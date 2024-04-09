@@ -26,7 +26,7 @@ RUNS:=run
 RUN.run:=tb_mcu3
 
 # generic assignments (applied to all simulation runs)
-GEN:=-gpath=D:/work/retro_fpga/jarv/sim/tb_mcu3/sim_nvc/
+GEN:=
 
 # global, analysis, elaboration and run options
 NVC_GOPTS+=--std=2008 -L.
