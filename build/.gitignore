@@ -1,0 +1,6 @@
+*
+!/**/
+!.gitignore
+!*/makefile
+# temporary
+!test_fit_mcu3/vivado/*.xpr
