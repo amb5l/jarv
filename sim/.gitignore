@@ -1,6 +1,7 @@
 *
 !/**/
 !.gitignore
+!*.mak
 !*/makefile
 # temporary
 !tb_mcu3/sim_nvc/makefile
