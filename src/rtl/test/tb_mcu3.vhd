@@ -56,13 +56,6 @@ architecture sim of tb_mcu3 is
   signal csr       : csr_t;
   signal csr_rdata : xval_t;
 
-  -- DUT external access
-  alias dut_csr_en    is << signal DUT.csr_en    : std_ulogic >>;
-  alias dut_csr_wop   is << signal DUT.csr_wop   : csr_wop_t  >>;
-  alias dut_csr_sel   is << signal DUT.csr_sel   : csra_t     >>;
-  alias dut_csr_wdata is << signal DUT.csr_wdata : xval_t     >>;
-  alias dut_csr_rdata is << signal DUT.csr_rdata : xval_t     >>;
-
 begin
 
   rst   <= '1', '0' after 100 ns;
@@ -128,8 +121,12 @@ begin
   --------------------------------------------------------------------------------
   -- dummy CSR register file
 
-  csr_rdata <= csr(to_integer(unsigned(dut_csr_sel)));
-  P_CSR: process(rst,clk)
+  P_CSR: process(all)
+    alias dut_csr_en    is << signal DUT.csr_en    : std_ulogic >>;
+    alias dut_csr_wop   is << signal DUT.csr_wop   : csr_wop_t  >>;
+    alias dut_csr_sel   is << signal DUT.csr_sel   : csra_t     >>;
+    alias dut_csr_wdata is << signal DUT.csr_wdata : xval_t     >>;
+    alias dut_csr_rdata is << signal DUT.csr_rdata : xval_t     >>;
   begin
     if rst = '1' then
       csr <= (others => (others => '0'));
@@ -144,6 +141,8 @@ begin
         end if;
       end if;
     end if;
+    csr_rdata <= csr(to_integer(unsigned(dut_csr_sel)));
+    dut_csr_rdata <= force csr_rdata;
   end process P_CSR;
 
   --------------------------------------------------------------------------------
@@ -185,14 +184,6 @@ begin
       end if;
     end if;
   end process P_MEM;
-
-  --------------------------------------------------------------------------------
-  -- inject stimulus instructions and dummy CSR read data into DUT
-
-  INJECT: process(all)
-  begin
-    dut_csr_rdata <= force csr_rdata;
-  end process INJECT;
 
   --------------------------------------------------------------------------------
 
