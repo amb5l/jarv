@@ -33,40 +33,31 @@ package mcu3_pkg is
       mtvec      : std_ulogic_vector(isa_decode(isa_name).XLEN-1 downto 0)
     );
     port (
-
-      rst       : in    std_ulogic;
-      clk       : in    std_ulogic;
-      clken     : in    std_ulogic;
-
-      irq       : in    std_ulogic;
-
-      mtime     : in    tval_t;
-      mtimecmp  : in    tval_t;
-
-      if_avalid : out   std_ulogic;
-      if_ajmp   : out   std_ulogic;
-      if_aaddr  : out   std_ulogic_vector;
-      if_amx    : in    std_ulogic;
-      if_aready : in    std_ulogic;
-
-      if_rvalid : in    std_ulogic;
-      if_rdata  : in    std_ulogic_vector;
-      if_rready : out   std_ulogic;
-
-      ls_avalid : out   std_ulogic;
-      ls_aaddr  : out   std_ulogic_vector;
-      ls_amx    : in    std_ulogic;
-      ls_aready : in    std_ulogic;
-
-      ls_wvalid : out   std_ulogic;
-      ls_wsize  : out   sz_t;
-      ls_wdata  : out   std_ulogic_vector;
-      ls_wready : in    std_ulogic;
-
-      ls_rvalid : in    std_ulogic;
-      ls_rdata  : in    std_ulogic_vector;
-      ls_rready : out   std_ulogic;
-
+      rst         : in    std_ulogic;
+      clk         : in    std_ulogic;
+      clken       : in    std_ulogic;
+      irq         : in    std_ulogic;
+      mtime       : in    tval_t;
+      mtimecmp    : in    tval_t;
+      if_avalid   : out   std_ulogic;
+      if_ajmp     : out   std_ulogic;
+      if_aaddr    : out   std_ulogic_vector;
+      if_amx      : in    std_ulogic;
+      if_aready   : in    std_ulogic;
+      if_rvalid   : in    std_ulogic;
+      if_rdata    : in    std_ulogic_vector;
+      if_rready   : out   std_ulogic;
+      ls_avalid   : out   std_ulogic;
+      ls_aaddr    : out   std_ulogic_vector;
+      ls_amx      : in    std_ulogic;
+      ls_aready   : in    std_ulogic;
+      ls_wvalid   : out   std_ulogic;
+      ls_wsize    : out   sz_t;
+      ls_wdata    : out   std_ulogic_vector;
+      ls_wready   : in    std_ulogic;
+      ls_rvalid   : in    std_ulogic;
+      ls_rdata    : in    std_ulogic_vector;
+      ls_rready   : out   std_ulogic;
       csr_x       : in    std_ulogic;
       csr_en      : out   std_ulogic;
       csr_wop     : out   csr_wop_t;
@@ -102,43 +93,43 @@ entity mcu3 is
 
   port (
 
-    rst       : in    std_ulogic;
-    clk       : in    std_ulogic;
-    clken     : in    std_ulogic;
+    rst         : in    std_ulogic;
+    clk         : in    std_ulogic;
+    clken       : in    std_ulogic;
 
-    irq       : in    std_ulogic;
+    irq         : in    std_ulogic;
 
-    mtime     : in    tval_t;
-    mtimecmp  : in    tval_t;
+    mtime       : in    tval_t;
+    mtimecmp    : in    tval_t;
 
     -- instruction fetch address channel
-    if_avalid : out   std_ulogic;                                              -- instruction address valid
-    if_ajmp   : out   std_ulogic;                                              -- reset/exception/jump/branch
-    if_aaddr  : out   std_ulogic_vector; -- instruction address
-    if_amx    : in    std_ulogic;                                              -- load/store misalign exceptions
-    if_aready : in    std_ulogic;                                              -- instruction address ready
+    if_avalid   : out   std_ulogic;                                              -- instruction address valid
+    if_ajmp     : out   std_ulogic;                                              -- reset/exception/jump/branch
+    if_aaddr    : out   std_ulogic_vector; -- instruction address
+    if_amx      : in    std_ulogic;                                              -- load/store misalign exceptions
+    if_aready   : in    std_ulogic;                                              -- instruction address ready
 
     -- instruction fetch read data channel
-    if_rvalid : in    std_ulogic;                                              -- instruction data valid
-    if_rdata  : in    std_ulogic_vector; -- instruction data
-    if_rready : out   std_ulogic;                                              -- instruction data ready
+    if_rvalid   : in    std_ulogic;                                              -- instruction data valid
+    if_rdata    : in    std_ulogic_vector; -- instruction data
+    if_rready   : out   std_ulogic;                                              -- instruction data ready
 
     -- load/store address channel
-    ls_avalid : out   std_ulogic;                                              -- load/store address valid
-    ls_aaddr  : out   std_ulogic_vector; -- load/store address
-    ls_amx    : in    std_ulogic;                                              -- load/store misalign exceptions
-    ls_aready : in    std_ulogic;                                              -- load/store address ready
+    ls_avalid   : out   std_ulogic;                                              -- load/store address valid
+    ls_aaddr    : out   std_ulogic_vector; -- load/store address
+    ls_amx      : in    std_ulogic;                                              -- load/store misalign exceptions
+    ls_aready   : in    std_ulogic;                                              -- load/store address ready
 
     -- load/store write data channel
-    ls_wvalid : out   std_ulogic;                                              -- load/store write data valid
-    ls_wsize  : out   sz_t;                                                    -- load/store size
-    ls_wdata  : out   std_ulogic_vector; -- load/store write data
-    ls_wready : in    std_ulogic;                                              -- load/store write data ready
+    ls_wvalid   : out   std_ulogic;                                              -- load/store write data valid
+    ls_wsize    : out   sz_t;                                                    -- load/store size
+    ls_wdata    : out   std_ulogic_vector; -- load/store write data
+    ls_wready   : in    std_ulogic;                                              -- load/store write data ready
 
     -- load/store read data channel
-    ls_rvalid : in    std_ulogic;                                              -- load/store read data valid
-    ls_rdata  : in    std_ulogic_vector; -- load/store read data
-    ls_rready : out   std_ulogic;                                              -- load/store read data ready
+    ls_rvalid   : in    std_ulogic;                                              -- load/store read data valid
+    ls_rdata    : in    std_ulogic_vector; -- load/store read data
+    ls_rready   : out   std_ulogic;                                              -- load/store read data ready
 
     -- CSR (to support verification)
     csr_x       : in    std_ulogic;
