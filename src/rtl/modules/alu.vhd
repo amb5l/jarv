@@ -68,8 +68,8 @@ architecture rtl of alu is
 
   subtype xval_t is std_ulogic_vector(isa.XLEN-1 downto 0);
 
-  constant v0 : xval_t := (others => '0');
-  constant v1 : xval_t := (0 => '1', others => '0');
+  constant v0 : xval_t := std_ulogic_vector(to_unsigned(0,isa.XLEN));
+  constant v1 : xval_t := std_ulogic_vector(to_unsigned(1,isa.XLEN));
 
   signal opvec : opvec_t;
   signal c     : std_ulogic;
@@ -78,22 +78,22 @@ architecture rtl of alu is
   signal imm12 : imm12_t;
   signal imm20 : imm20_t;
 
-  function v(s : signed) return xval_t is
+  function v(s : signed) return std_ulogic_vector is
   begin
-    return xval_t(s);
+    return std_ulogic_vector(s);
   end function v;
 
-  function v(u : unsigned) return xval_t is
+  function v(u : unsigned) return std_ulogic_vector is
   begin
-    return xval_t(u);
+    return std_ulogic_vector(u);
   end function v;
 
-  function s(v : xval_t) return signed is
+  function s(v : std_ulogic_vector) return signed is
   begin
     return signed(v);
   end function s;
 
-  function u(v : xval_t) return unsigned is
+  function u(v : std_ulogic_vector) return unsigned is
   begin
     return unsigned(v);
   end function u;

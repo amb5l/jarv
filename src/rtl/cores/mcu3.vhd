@@ -29,8 +29,8 @@ package mcu3_pkg is
   component mcu3 is
     generic (
       isa_name   : string := "RV32ICZicsr";
-      rstvec     : std_ulogic_vector;
-      mtvec      : std_ulogic_vector
+      rstvec     : std_ulogic_vector(isa_decode(isa_name).XLEN-1 downto 0);
+      mtvec      : std_ulogic_vector(isa_decode(isa_name).XLEN-1 downto 0)
     );
     port (
 
@@ -65,8 +65,14 @@ package mcu3_pkg is
 
       ls_rvalid : in    std_ulogic;
       ls_rdata  : in    std_ulogic_vector;
-      ls_rready : out   std_ulogic
+      ls_rready : out   std_ulogic;
 
+      csr_x       : in    std_ulogic;
+      csr_en      : out   std_ulogic;
+      csr_wop     : out   csr_wop_t;
+      csr_sel     : out   csra_t;
+      csr_wdata   : out   std_ulogic_vector;
+      csr_rdata_x : in    std_ulogic_vector
     );
   end component mcu3;
 
@@ -76,6 +82,7 @@ end package mcu3_pkg;
 
 use work.common_pkg.all;
 use work.isa_pkg.all;
+use work.mcu3_pkg.all;
 
 use work.decoder_pkg.all;
 use work.regfile_ad_pkg.all;
@@ -89,8 +96,8 @@ library ieee;
 entity mcu3 is
   generic (
     isa_name   : string := "RV32ICZicsr";
-    rstvec     : std_ulogic_vector;
-    mtvec      : std_ulogic_vector
+    rstvec     : std_ulogic_vector(isa_decode(isa_name).XLEN-1 downto 0);
+    mtvec      : std_ulogic_vector(isa_decode(isa_name).XLEN-1 downto 0)
   );
 
   port (
@@ -131,7 +138,15 @@ entity mcu3 is
     -- load/store read data channel
     ls_rvalid : in    std_ulogic;                                              -- load/store read data valid
     ls_rdata  : in    std_ulogic_vector; -- load/store read data
-    ls_rready : out   std_ulogic                                               -- load/store read data ready
+    ls_rready : out   std_ulogic;                                              -- load/store read data ready
+
+    -- CSR (to support verification)
+    csr_x       : in    std_ulogic;
+    csr_en      : out   std_ulogic;
+    csr_wop     : out   csr_wop_t;
+    csr_sel     : out   csra_t;
+    csr_wdata   : out   std_ulogic_vector;
+    csr_rdata_x : in    std_ulogic_vector
 
   );
 end entity mcu3;
@@ -249,10 +264,7 @@ architecture rtl of mcu3 is
     );
 
   signal csr_nonex   : std_ulogic;
-  signal csr_en      : std_ulogic;
-  signal csr_wop     : csr_wop_t;
-  signal csr_sel     : csra_t;
-  signal csr_wdata   : xval_t;
+  signal csr_rdata_i : xval_t;
   signal csr_rdata   : xval_t;
 
   signal exceps      : exceps_t;
@@ -461,6 +473,7 @@ begin
   csr_sel   <= d.csr_sel;
   csr_wop   <= d.csr_wop;
   csr_wdata <= rs1_data;
+  csr_rdata <= csr_rdata_x when csr_x else csr_rdata_i;
 
   U_CSR: component csr_m
     generic map (
@@ -476,7 +489,7 @@ begin
       wop     => csr_wop,
       sel     => csr_sel,
       wdata   => csr_wdata,
-      rdata   => csr_rdata,
+      rdata   => csr_rdata_i,
       nonex   => csr_nonex,
       instret => s3.rdyo,
       mtime   => mtime,
@@ -503,57 +516,66 @@ begin
     end if;
   end process P_IRQ;
 
-  exceps.interrupt_s_u      <= '0';
-  exceps.interrupt_s_s      <= '0';
-  exceps.interrupt_s_h      <= '0';
-  exceps.interrupt_s_m      <= '0';
-  exceps.interrupt_t_u      <= '0';
-  exceps.interrupt_t_s      <= '0';
-  exceps.interrupt_t_h      <= '0';
-  exceps.interrupt_t_m      <= csr.mstatus(CSRB_MIP_MTIP) and csr.mie(CSRB_MIE_MTIE) and csr.mstatus(CSRB_MSTATUS_MIE);
-  exceps.interrupt_e_u      <= '0';
-  exceps.interrupt_e_s      <= '0';
-  exceps.interrupt_e_h      <= '0';
-  exceps.interrupt_e_m      <= csr.mstatus(CSRB_MIP_MEIP) and csr.mie(CSRB_MIE_MEIE) and csr.mstatus(CSRB_MSTATUS_MIE);
-  exceps.interrupt_rsvd_12  <= '0';
-  exceps.interrupt_rsvd_13  <= '0';
-  exceps.interrupt_rsvd_14  <= '0';
-  exceps.interrupt_rsvd_15  <= '0';
-  exceps.trap_align_instr   <= s2.valid and s2.imx;
-  exceps.trap_access_instr  <= '0';
-  exceps.trap_illegal_instr <= s2.valid and (csr_nonex or not d.legal);
-  exceps.trap_break         <= s2.valid and bool2sl(d.mnemonic = U_EBREAK);
-  exceps.trap_align_load    <= s2.valid and bool2sl(d.opcode = LOAD) and ls_amx;
-  exceps.trap_access_load   <= '0';
-  exceps.trap_align_store   <= s2.valid and bool2sl(d.opcode = STORE) and ls_amx;
-  exceps.trap_access_store  <= '0';
-  exceps.trap_ecall_u       <= '0';
-  exceps.trap_ecall_s       <= '0';
-  exceps.trap_ecall_h       <= '0';
-  exceps.trap_ecall_m       <= s2.valid and bool2sl(d.mnemonic = U_ECALL);
-  exceps.trap_page_instr    <= '0';
-  exceps.trap_page_load     <= '0';
-  exceps.trap_rsvd_14       <= '0';
-  exceps.trap_page_store    <= '0';
+  P_EXCEP: process(all)
+  begin
 
-  cause(31) <= exceps.interrupt_e_m or exceps.interrupt_s_m or exceps.interrupt_t_m;
-  cause(30 downto 4) <= (others => '0');
-  cause(3 downto 0) <=
-    ECAUSE_INTERRUPT_E_M      when exceps.interrupt_e_m      = '1' else
-    ECAUSE_INTERRUPT_T_M      when exceps.interrupt_t_m      = '1' else
-    ECAUSE_INTERRUPT_S_M      when exceps.interrupt_s_m      = '1' else
-    ECAUSE_TRAP_ALIGN_INSTR   when exceps.trap_align_instr   = '1' else
-    ECAUSE_TRAP_ILLEGAL_INSTR when exceps.trap_illegal_instr = '1' else
-    ECAUSE_TRAP_ALIGN_LOAD    when exceps.trap_align_load    = '1' else
-    ECAUSE_TRAP_ALIGN_STORE   when exceps.trap_align_store   = '1' else
-    ECAUSE_TRAP_BREAK         when exceps.trap_break         = '1' else
-    ECAUSE_TRAP_ECALL_M       when exceps.trap_ecall_m       = '1' else
-    (others => 'X');
+    exceps.interrupt_s_u      <= '0';
+    exceps.interrupt_s_s      <= '0';
+    exceps.interrupt_s_h      <= '0';
+    exceps.interrupt_s_m      <= '0';
+    exceps.interrupt_t_u      <= '0';
+    exceps.interrupt_t_s      <= '0';
+    exceps.interrupt_t_h      <= '0';
+    exceps.interrupt_t_m      <= csr.mstatus(CSRB_MIP_MTIP) and csr.mie(CSRB_MIE_MTIE) and csr.mstatus(CSRB_MSTATUS_MIE);
+    exceps.interrupt_e_u      <= '0';
+    exceps.interrupt_e_s      <= '0';
+    exceps.interrupt_e_h      <= '0';
+    exceps.interrupt_e_m      <= csr.mstatus(CSRB_MIP_MEIP) and csr.mie(CSRB_MIE_MEIE) and csr.mstatus(CSRB_MSTATUS_MIE);
+    exceps.interrupt_rsvd_12  <= '0';
+    exceps.interrupt_rsvd_13  <= '0';
+    exceps.interrupt_rsvd_14  <= '0';
+    exceps.interrupt_rsvd_15  <= '0';
+    exceps.trap_align_instr   <= s2.valid and s2.imx;
+    exceps.trap_access_instr  <= '0';
+    exceps.trap_illegal_instr <= s2.valid and ((csr_nonex and not csr_x) or not d.legal);
+    exceps.trap_break         <= s2.valid and bool2sl(d.mnemonic = U_EBREAK);
+    exceps.trap_align_load    <= s2.valid and bool2sl(d.opcode = LOAD) and ls_amx;
+    exceps.trap_access_load   <= '0';
+    exceps.trap_align_store   <= s2.valid and bool2sl(d.opcode = STORE) and ls_amx;
+    exceps.trap_access_store  <= '0';
+    exceps.trap_ecall_u       <= '0';
+    exceps.trap_ecall_s       <= '0';
+    exceps.trap_ecall_h       <= '0';
+    exceps.trap_ecall_m       <= s2.valid and bool2sl(d.mnemonic = U_ECALL);
+    exceps.trap_page_instr    <= '0';
+    exceps.trap_page_load     <= '0';
+    exceps.trap_rsvd_14       <= '0';
+    exceps.trap_page_store    <= '0';
 
-  with cause select tval <=
-    s2.pc           when ECAUSE_TRAP_ALIGN_INSTR | ECAUSE_TRAP_ILLEGAL_INSTR,
-    ls_aaddr        when ECAUSE_TRAP_ALIGN_LOAD  | ECAUSE_TRAP_ALIGN_STORE,
-    (others => '0') when others;
+    cause(31) <= exceps.interrupt_e_m or exceps.interrupt_s_m or exceps.interrupt_t_m;
+    cause(30 downto 4) <= (others => '0');
+    cause(3 downto 0) <=
+      ECAUSE_INTERRUPT_E_M      when exceps.interrupt_e_m      = '1' else
+      ECAUSE_INTERRUPT_T_M      when exceps.interrupt_t_m      = '1' else
+      ECAUSE_INTERRUPT_S_M      when exceps.interrupt_s_m      = '1' else
+      ECAUSE_TRAP_ALIGN_INSTR   when exceps.trap_align_instr   = '1' else
+      ECAUSE_TRAP_ILLEGAL_INSTR when exceps.trap_illegal_instr = '1' else
+      ECAUSE_TRAP_ALIGN_LOAD    when exceps.trap_align_load    = '1' else
+      ECAUSE_TRAP_ALIGN_STORE   when exceps.trap_align_store   = '1' else
+      ECAUSE_TRAP_BREAK         when exceps.trap_break         = '1' else
+      ECAUSE_TRAP_ECALL_M       when exceps.trap_ecall_m       = '1' else
+      (others => 'X');
+
+    if cause(31) = '0' then
+      with cause(3 downto 0) select tval <=
+        s2.pc           when ECAUSE_TRAP_ALIGN_INSTR | ECAUSE_TRAP_ILLEGAL_INSTR,
+        ls_aaddr        when ECAUSE_TRAP_ALIGN_LOAD  | ECAUSE_TRAP_ALIGN_STORE,
+        (others => '0') when others;
+    else
+      tval <= (others => '0');
+    end if;
+
+    end process P_EXCEP;
 
   --------------------------------------------------------------------------------
 

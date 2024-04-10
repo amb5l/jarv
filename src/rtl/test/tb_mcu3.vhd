@@ -22,7 +22,7 @@ architecture sim of tb_mcu3 is
 
   subtype xval_t is std_ulogic_vector(isa.XLEN-1 downto 0);
   type csr_t is array(0 to 4095) of xval_t;
-  type mem_t is array(0 to (2**(3+mem_size_log2-isa.XLEN))-1) of xval_t;
+  type mem_t is array(0 to (2**(mem_size_log2-((isa.XLEN/32)+1)))-1) of xval_t;
 
   -- DUT ports
   signal rst       : std_ulogic;
@@ -54,11 +54,17 @@ architecture sim of tb_mcu3 is
   signal mem       : mem_t;
 
   signal csr       : csr_t;
+
+  signal csr_x     : std_ulogic;
+  signal csr_en    : std_ulogic;
+  signal csr_wop   : csr_wop_t;
+  signal csr_sel   : csra_t;
+  signal csr_wdata : xval_t;
   signal csr_rdata : xval_t;
 
 begin
 
-  rst   <= '1', '0' after 100 ns;
+  rst   <= '1', '0' after 20 ns;
   clk   <= '0' when clk = 'U' else not clk after 5 ns;
   clken <= '1';
 
@@ -99,7 +105,14 @@ begin
       ls_wready => ls_wready,
       ls_rvalid => ls_rvalid,
       ls_rdata  => ls_rdata,
-      ls_rready => ls_rready
+      ls_rready => ls_rready,
+      csr_x       => csr_x,
+      csr_en      => csr_en,
+      csr_wop     => csr_wop,
+      csr_sel     => csr_sel,
+      csr_wdata   => csr_wdata,
+      csr_rdata_x => csr_rdata
+
     );
 
   --------------------------------------------------------------------------------
@@ -121,28 +134,24 @@ begin
   --------------------------------------------------------------------------------
   -- dummy CSR register file
 
+  csr_x <= '1';
+
   P_CSR: process(all)
-    alias dut_csr_en    is << signal DUT.csr_en    : std_ulogic >>;
-    alias dut_csr_wop   is << signal DUT.csr_wop   : csr_wop_t  >>;
-    alias dut_csr_sel   is << signal DUT.csr_sel   : csra_t     >>;
-    alias dut_csr_wdata is << signal DUT.csr_wdata : xval_t     >>;
-    alias dut_csr_rdata is << signal DUT.csr_rdata : xval_t     >>;
   begin
     if rst = '1' then
       csr <= (others => (others => '0'));
     elsif rising_edge(clk) then
-      if dut_csr_en = '1' then
-        if dut_csr_wop = CSR_WOP_WR then
-          csr(to_integer(unsigned(dut_csr_sel))) <= dut_csr_wdata;
-        elsif dut_csr_wop = CSR_WOP_SET then
-          csr(to_integer(unsigned(dut_csr_sel))) <= dut_csr_rdata or dut_csr_wdata;
-        elsif dut_csr_wop = CSR_WOP_CLR then
-          csr(to_integer(unsigned(dut_csr_sel))) <= dut_csr_rdata and not dut_csr_wdata;
+      if csr_en = '1' then
+        if csr_wop = CSR_WOP_WR then
+          csr(to_integer(unsigned(csr_sel))) <= csr_wdata;
+        elsif csr_wop = CSR_WOP_SET then
+          csr(to_integer(unsigned(csr_sel))) <= csr_rdata or csr_wdata;
+        elsif csr_wop = CSR_WOP_CLR then
+          csr(to_integer(unsigned(csr_sel))) <= csr_rdata and not csr_wdata;
         end if;
       end if;
     end if;
-    csr_rdata <= csr(to_integer(unsigned(dut_csr_sel)));
-    dut_csr_rdata <= force csr_rdata;
+    csr_rdata <= csr(to_integer(unsigned(csr_sel)));
   end process P_CSR;
 
   --------------------------------------------------------------------------------
@@ -153,7 +162,7 @@ begin
   ls_wready <= '1';
   ls_amx    <= '0';
   P_MEM: process(clk)
-    variable v_addr : integer range 0 to 2**(3+mem_size_log2-isa.XLEN)-1;
+    variable v_addr : integer range 0 to (2**(mem_size_log2-((isa.XLEN/32)+1)))-1;
   begin
     assert mem_align
       report "unaligned memory access not yet supported" severity failure;

@@ -51,7 +51,7 @@ package csr_m_pkg is
   component csr_m is
     generic (
       isa     : isa_t;
-      mtvec   : std_ulogic_vector
+      mtvec   : std_ulogic_vector(isa.XLEN-1 downto 0)
     );
     port (
 
@@ -98,7 +98,7 @@ library ieee;
 entity csr_m is
   generic (
     isa     : isa_t;
-    mtvec   : std_ulogic_vector
+    mtvec   : std_ulogic_vector(isa.XLEN-1 downto 0)
   );
   port (
 
@@ -176,7 +176,7 @@ begin
   begin
     if rst = '1' then
 
-      csr.mstatus   <= v0;
+      csr.mstatus   <= (63 downto 0 => '0');
       csr.mie       <= v0;
       csr.mscratch  <= v0;
       csr.mepc      <= v0;
@@ -184,8 +184,8 @@ begin
       csr.mtval     <= v0;
       csr.mip       <= v0;
       csr.mtinst    <= v0;
-      csr.mcycle    <= v0;
-      csr.minstret  <= v0;
+      csr.mcycle    <= (63 downto 0 => '0');
+      csr.minstret  <= (63 downto 0 => '0');
 
     elsif rising_edge(clk) and clken = '1' then
 
