@@ -58,7 +58,7 @@ package mcu3_pkg is
       ls_rvalid   : in    std_ulogic;
       ls_rdata    : in    std_ulogic_vector;
       ls_rready   : out   std_ulogic;
-      csr_x       : in    std_ulogic;
+      csr_x       : in    std_ulogic := '0';
       csr_en      : out   std_ulogic;
       csr_wop     : out   csr_wop_t;
       csr_sel     : out   csra_t;
@@ -132,7 +132,7 @@ entity mcu3 is
     ls_rready   : out   std_ulogic;        -- load/store read data ready
 
     -- CSR (to support verification)
-    csr_x       : in    std_ulogic;
+    csr_x       : in    std_ulogic := '0';
     csr_en      : out   std_ulogic;
     csr_wop     : out   csr_wop_t;
     csr_sel     : out   csra_t;
