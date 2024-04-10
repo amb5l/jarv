@@ -19,6 +19,9 @@ SIM_SRC.work:=\
 	$(SRC)/modules/alu.vhd \
 	$(SRC)/modules/csr_m.vhd \
 	$(SRC)/cores/$(DUT).vhd \
+	$(SRC)/test/vc_if.vhd \
+	$(SRC)/test/vc_ls.vhd \
+	$(SRC)/test/vc_csr.vhd \
 	$(SRC)/test/$(SIM_TB).vhd
 SIM_RUNS:=run
 SIM_RUN.run:=run:$(SIM_TB)

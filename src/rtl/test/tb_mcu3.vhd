@@ -3,6 +3,9 @@
 use work.common_pkg.all;
 use work.isa_pkg.all;
 use work.mcu3_pkg.all;
+use work.vc_if_pkg.all;
+use work.vc_ls_pkg.all;
+use work.vc_csr_pkg.all;
 
 library ieee;
   use ieee.std_logic_1164.all;
@@ -22,7 +25,6 @@ architecture sim of tb_mcu3 is
 
   subtype xval_t is std_ulogic_vector(isa.XLEN-1 downto 0);
   type csr_t is array(0 to 4095) of xval_t;
-  type mem_t is array(0 to (2**(mem_size_log2-((isa.XLEN/32)+1)))-1) of xval_t;
 
   -- DUT ports
   signal rst       : std_ulogic;
@@ -51,10 +53,6 @@ architecture sim of tb_mcu3 is
   signal ls_rdata  : std_ulogic_vector(isa_decode(isa_name).XLEN-1 downto 0);
   signal ls_rready : std_ulogic;
 
-  signal mem       : mem_t;
-
-  signal csr       : csr_t;
-
   signal csr_x     : std_ulogic;
   signal csr_en    : std_ulogic;
   signal csr_wop   : csr_wop_t;
@@ -67,8 +65,6 @@ begin
   rst   <= '1', '0' after 20 ns;
   clk   <= '0' when clk = 'U' else not clk after 5 ns;
   clken <= '1';
-
-  --------------------------------------------------------------------------------
 
   irq      <= '0';
   mtime    <= (others => '0');
@@ -115,85 +111,54 @@ begin
 
     );
 
-  --------------------------------------------------------------------------------
+  U_VC_IF: component vc_if
+    port map (
+      rst    => rst,
+      clk    => clk,
+      clken  => clken,
+      avalid => if_avalid,
+      ajmp   => if_ajmp,
+      aaddr  => if_aaddr,
+      amx    => if_amx,
+      aready => if_aready,
+      rvalid => if_rvalid,
+      rdata  => if_rdata,
+      rready => if_rready
+    );
 
-  -- instruction fetches always return NOPs
-  if_aready <= '1';
-  if_amx    <= '0';
-  process(rst,clk)
-  begin
-    if rst = '1' then
-      if_rvalid <= '0';
-      if_rdata  <= (others => 'X');
-    elsif rising_edge(clk) then
-      if_rvalid <= (if_avalid and if_aready) or (if_rvalid and not if_rready);
-      if_rdata  <= X"00000013" when if_avalid and if_aready else (others => 'X') when if_rvalid and not if_rready;
-    end if;
-  end process;
+  U_VC_LS: component vc_ls
+    generic map (
+      size_log2 => 12,
+      align     => true
+    )
+    port map (
+      rst    => rst,
+      clk    => clk,
+      clken  => clken,
+      avalid => ls_avalid,
+      aaddr  => ls_aaddr,
+      amx    => ls_amx,
+      aready => ls_aready,
+      wvalid => ls_wvalid,
+      wsize  => ls_wsize,
+      wdata  => ls_wdata,
+      wready => ls_wready,
+      rvalid => ls_rvalid,
+      rdata  => ls_rdata,
+      rready => ls_rready
+    );
 
-  --------------------------------------------------------------------------------
-  -- dummy CSR register file
-
-  csr_x <= '1';
-
-  P_CSR: process(all)
-  begin
-    if rst = '1' then
-      csr <= (others => (others => '0'));
-    elsif rising_edge(clk) then
-      if csr_en = '1' then
-        if csr_wop = CSR_WOP_WR then
-          csr(to_integer(unsigned(csr_sel))) <= csr_wdata;
-        elsif csr_wop = CSR_WOP_SET then
-          csr(to_integer(unsigned(csr_sel))) <= csr_rdata or csr_wdata;
-        elsif csr_wop = CSR_WOP_CLR then
-          csr(to_integer(unsigned(csr_sel))) <= csr_rdata and not csr_wdata;
-        end if;
-      end if;
-    end if;
-    csr_rdata <= csr(to_integer(unsigned(csr_sel)));
-  end process P_CSR;
-
-  --------------------------------------------------------------------------------
-  -- data memory
-  -- need to improve this to decouple address and write data
-
-  ls_aready <= '1';
-  ls_wready <= '1';
-  ls_amx    <= '0';
-  P_MEM: process(clk)
-    variable v_addr : integer range 0 to (2**(mem_size_log2-((isa.XLEN/32)+1)))-1;
-  begin
-    assert mem_align
-      report "unaligned memory access not yet supported" severity failure;
-    if rst = '1' then
-      ls_rvalid <= '0';
-      ls_rdata  <= (others => 'X');
-    elsif rising_edge(clk) then
-      if ls_rvalid and ls_rready then
-        ls_rvalid <= '0';
-        ls_rdata  <= (others => 'X');
-      end if;
-      if ls_avalid and ls_aready then
-        v_addr := to_integer(unsigned(ls_aaddr(mem_size_log2-1 downto 2)));
-        ls_rvalid <= '1';
-        ls_rdata  <= mem(v_addr);
-      end if;
-      if ls_wvalid and ls_wready then
-        mem(v_addr)(7 downto 0) <= ls_wdata(7 downto  0);
-        if ls_wsize /= SZ_B then
-          mem(v_addr)(15 downto 8) <= ls_wdata(15 downto 8);
-        end if;
-        if ls_wsize = SZ_W or ls_wsize = SZ_D then
-          mem(v_addr)(31 downto 16) <= ls_wdata(31 downto 16);
-        end if;
-        if isa.XLEN = 64 and ls_wsize = SZ_D then
-          mem(v_addr)(63 downto 32) <= ls_wdata(63 downto 32);
-        end if;
-      end if;
-    end if;
-  end process P_MEM;
-
-  --------------------------------------------------------------------------------
+  U_VC_CSR: component vc_csr
+    port map (
+      rst    => rst,
+      clk    => clk,
+      clken  => clken,
+      x      => csr_x,
+      en     => csr_en,
+      wop    => csr_wop,
+      sel    => csr_sel,
+      wdata  => csr_wdata,
+      rdata  => csr_rdata
+    );
 
 end architecture sim;
