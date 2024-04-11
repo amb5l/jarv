@@ -51,7 +51,8 @@ package csr_m_pkg is
   component csr_m is
     generic (
       isa     : isa_t;
-      mtvec   : std_ulogic_vector(isa.XLEN-1 downto 0)
+      mtvec   : std_ulogic_vector(isa.XLEN-1 downto 0);
+      r_sync  : boolean := false
     );
     port (
       rst     : in    std_ulogic;
@@ -91,7 +92,8 @@ library ieee;
 entity csr_m is
   generic (
     isa     : isa_t;
-    mtvec   : std_ulogic_vector(isa.XLEN-1 downto 0)
+    mtvec   : std_ulogic_vector(isa.XLEN-1 downto 0);
+    r_sync  : boolean := false
   );
   port (
 
@@ -129,7 +131,9 @@ architecture rtl of csr_m is
 
   constant v0 : xval_t := (xval_t'range => '0');
 
-  signal mip_hw : xval_t;
+  signal mip_hw  : xval_t;
+  signal rdata_a : xval_t;
+  signal rdata_s : xval_t;
 
 begin
 
@@ -301,39 +305,39 @@ begin
 
   P_READ: process(all)
   begin
-    nonex <= '0';
-    rdata <= (xval_t'range => 'X');
+    nonex   <= '0';
+    rdata_a <= (xval_t'range => 'X');
     case sel is
-      when CSRA_CYCLE      => rdata <= csr.cycle      (isa.XLEN-1 downto 0) ; --  cycle counter for RDCYCLE instruction
-      when CSRA_TIME       => rdata <= csr.time       (isa.XLEN-1 downto 0) ; --  timer for RDTIME instruction
-      when CSRA_INSTRET    => rdata <= csr.instret    (isa.XLEN-1 downto 0) ; --  instructions-retired counter for RDINSTRET instruction
-      when CSRA_MVENDORID  => rdata <= csr.mvendorid                        ; --  vendor ID
-      when CSRA_MARCHID    => rdata <= csr.marchid                          ; --  architecture ID
-      when CSRA_MIMPID     => rdata <= csr.mimpid                           ; --  implementation ID
-      when CSRA_MHARTID    => rdata <= csr.mhartid                          ; --  hardware thread ID
-      when CSRA_MCONFIGPTR => rdata <= csr.mconfigptr                       ; --  pointer to configuration data structure
-      when CSRA_MSTATUS    => rdata <= csr.mstatus    (isa.XLEN-1 downto 0) ; --  machine status register
-      when CSRA_MISA       => rdata <= csr.misa                             ; --  ISA and extensions
-      when CSRA_MIE        => rdata <= csr.mie                              ; --  machine interrupt-enable register
-      when CSRA_MTVEC      => rdata <= csr.mtvec                            ; --  machine trap-handler base address
-      when CSRA_MSCRATCH   => rdata <= csr.mscratch                         ; --  scratch register for machine trap handlers
-      when CSRA_MEPC       => rdata <= csr.mepc                             ; --  machine exception program counter
-      when CSRA_MCAUSE     => rdata <= csr.mcause                           ; --  machine trap cause
-      when CSRA_MTVAL      => rdata <= csr.mtval                            ; --  machine bad address or instruction
-      when CSRA_MIP        => rdata <= csr.mip or mip_hw                    ; --  machine interrupt pending
-      when CSRA_MTINST     => rdata <= csr.mtinst                           ; --  machine trap instruction (transformed)
-      when CSRA_MTVAL2     => rdata <= csr.mtval2                           ; --  machine bad guest physical address
-      when CSRA_MCYCLE     => rdata <= csr.mcycle     (isa.XLEN-1 downto 0) ; --  machine cycle counter
-      when CSRA_MINSTRET   => rdata <= csr.minstret   (isa.XLEN-1 downto 0) ; --  machine instructions-retired counter
+      when CSRA_CYCLE      => rdata_a <= csr.cycle      (isa.XLEN-1 downto 0) ; --  cycle counter for RDCYCLE instruction
+      when CSRA_TIME       => rdata_a <= csr.time       (isa.XLEN-1 downto 0) ; --  timer for RDTIME instruction
+      when CSRA_INSTRET    => rdata_a <= csr.instret    (isa.XLEN-1 downto 0) ; --  instructions-retired counter for RDINSTRET instruction
+      when CSRA_MVENDORID  => rdata_a <= csr.mvendorid                        ; --  vendor ID
+      when CSRA_MARCHID    => rdata_a <= csr.marchid                          ; --  architecture ID
+      when CSRA_MIMPID     => rdata_a <= csr.mimpid                           ; --  implementation ID
+      when CSRA_MHARTID    => rdata_a <= csr.mhartid                          ; --  hardware thread ID
+      when CSRA_MCONFIGPTR => rdata_a <= csr.mconfigptr                       ; --  pointer to configuration data structure
+      when CSRA_MSTATUS    => rdata_a <= csr.mstatus    (isa.XLEN-1 downto 0) ; --  machine status register
+      when CSRA_MISA       => rdata_a <= csr.misa                             ; --  ISA and extensions
+      when CSRA_MIE        => rdata_a <= csr.mie                              ; --  machine interrupt-enable register
+      when CSRA_MTVEC      => rdata_a <= csr.mtvec                            ; --  machine trap-handler base address
+      when CSRA_MSCRATCH   => rdata_a <= csr.mscratch                         ; --  scratch register for machine trap handlers
+      when CSRA_MEPC       => rdata_a <= csr.mepc                             ; --  machine exception program counter
+      when CSRA_MCAUSE     => rdata_a <= csr.mcause                           ; --  machine trap cause
+      when CSRA_MTVAL      => rdata_a <= csr.mtval                            ; --  machine bad address or instruction
+      when CSRA_MIP        => rdata_a <= csr.mip or mip_hw                    ; --  machine interrupt pending
+      when CSRA_MTINST     => rdata_a <= csr.mtinst                           ; --  machine trap instruction (transformed)
+      when CSRA_MTVAL2     => rdata_a <= csr.mtval2                           ; --  machine bad guest physical address
+      when CSRA_MCYCLE     => rdata_a <= csr.mcycle     (isa.XLEN-1 downto 0) ; --  machine cycle counter
+      when CSRA_MINSTRET   => rdata_a <= csr.minstret   (isa.XLEN-1 downto 0) ; --  machine instructions-retired counter
       when others =>
         if isa.XLEN = 32 then -- RV32 only: upper 32 bits of 64 bit CSRs
           case sel is
-            when CSRA_CYCLEH     => rdata <= csr.cycle    (63 downto 32) ;
-            when CSRA_TIMEH      => rdata <= csr.time     (63 downto 32) ;
-            when CSRA_INSTRETH   => rdata <= csr.instret  (63 downto 32) ;
-            when CSRA_MSTATUSH   => rdata <= csr.mstatus  (63 downto 32) ;
-            when CSRA_MCYCLEH    => rdata <= csr.mcycle   (63 downto 32) ;
-            when CSRA_MINSTRETH  => rdata <= csr.minstret (63 downto 32) ;
+            when CSRA_CYCLEH     => rdata_a <= csr.cycle    (63 downto 32) ;
+            when CSRA_TIMEH      => rdata_a <= csr.time     (63 downto 32) ;
+            when CSRA_INSTRETH   => rdata_a <= csr.instret  (63 downto 32) ;
+            when CSRA_MSTATUSH   => rdata_a <= csr.mstatus  (63 downto 32) ;
+            when CSRA_MCYCLEH    => rdata_a <= csr.mcycle   (63 downto 32) ;
+            when CSRA_MINSTRETH  => rdata_a <= csr.minstret (63 downto 32) ;
             when others          => nonex <= en;
           end case;
         else
@@ -341,5 +345,16 @@ begin
         end if;
     end case;
   end process P_READ;
+
+  P_READ_SYNC: process(rst,clk)
+  begin
+    if rst = '1' then
+      rdata_s <= (others => '0');
+    elsif rising_edge(clk) and clken = '1' then
+      rdata_s <= rdata_a;
+    end if;
+  end process P_READ_SYNC;
+
+  rdata <= rdata_s when r_sync else rdata_a;
 
 end architecture rtl;
