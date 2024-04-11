@@ -129,7 +129,7 @@ architecture rtl of csr_m is
 
   constant v0 : xval_t := (xval_t'range => '0');
 
-  signal mip_hw : std_ulogic_vector(isa.XLEN-1 downto 0);
+  signal mip_hw : xval_t;
 
 begin
 
