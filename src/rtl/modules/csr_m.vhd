@@ -54,24 +54,18 @@ package csr_m_pkg is
       mtvec   : std_ulogic_vector(isa.XLEN-1 downto 0)
     );
     port (
-
       rst     : in    std_ulogic;
       clk     : in    std_ulogic;
       clken   : in    std_ulogic;
-
       csr     : inout csr_m_t;
-
       en      : in    std_ulogic;
       wop     : in    csr_wop_t;
       sel     : in    csra_t;
       wdata   : in    std_ulogic_vector;
       rdata   : out   std_ulogic_vector;
       nonex   : out   std_ulogic;
-
       instret : in    std_ulogic;
-
       mtime   : in    tval_t;
-
       excep   : in    std_ulogic;
       irq_e   : in    std_ulogic;
       irq_t   : in    std_ulogic;
@@ -79,7 +73,6 @@ package csr_m_pkg is
       cause   : in    std_ulogic_vector;
       tval    : in    std_ulogic_vector;
       tinst   : in    std_ulogic_vector
-
     );
   end component csr_m;
 
