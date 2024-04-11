@@ -1,7 +1,6 @@
 --------------------------------------------------------------------------------
--- regfile_ad.vhd                                                           --
--- RISC-V register file with dual synchronous write ports and dual            --
--- asynchronous read ports.                                                   --
+-- regfile_ad.vhd                                                             --
+-- JARV register file with delayed/concurrent write support.                  --
 --------------------------------------------------------------------------------
 -- (C) Copyright 2024 Adam Barnes <ambarnes@gmail.com>                        --
 -- This file is part of JARV. JARV is free software: you can redistribute it  --
