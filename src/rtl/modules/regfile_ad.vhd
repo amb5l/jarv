@@ -34,7 +34,7 @@ package regfile_ad_pkg is
 
   component regfile_ad is
     generic (
-      isa       : isa_t
+      isa      : isa_t
     );
     port (
       rst      : in    std_ulogic;
@@ -67,7 +67,7 @@ library ieee;
 
 entity regfile_ad is
   generic (
-    isa       : isa_t
+    isa      : isa_t
   );
   port (
     rst      : in    std_ulogic;        -- reset
