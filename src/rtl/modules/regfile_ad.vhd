@@ -108,8 +108,8 @@ architecture rtl of regfile_ad is
 
 begin
 
-  rd_ab  <= ab(to_integer(unsigned(rd_sel)));
-  rd_we  <= rd_en and not rd_ld;
+  rd_ab <= ab(to_integer(unsigned(rd_sel)));
+  rd_we <= rd_en and not rd_ld;
 
   ld_ab <= ab(to_integer(unsigned(ld_sel)));
   ld_we <= ld_rdy;
@@ -127,7 +127,7 @@ begin
   P_WRITE: process(rst,clk)
   begin
     if rst = '1' then
-      ab      <= (others => '0');
+      ab     <= (others => '0');
       ld_sz  <= (others => '0');
       ld_sel <= (others => '0');
     elsif rising_edge(clk) and clken = '1' then
