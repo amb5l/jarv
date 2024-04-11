@@ -34,7 +34,8 @@ package regfile_ad_pkg is
 
   component regfile_ad is
     generic (
-      isa      : isa_t
+      isa      : isa_t;
+      rs_sync  : boolean := false
     );
     port (
       rst      : in    std_ulogic;
@@ -67,7 +68,8 @@ library ieee;
 
 entity regfile_ad is
   generic (
-    isa      : isa_t
+    isa      : isa_t;
+    rs_sync  : boolean := false
   );
   port (
     rst      : in    std_ulogic;        -- reset
@@ -105,6 +107,10 @@ architecture rtl of regfile_ad is
   signal regfile2a : regfile_t := (others => (others => '0'));
   signal regfile1b : regfile_t := (others => (others => '0'));
   signal regfile2b : regfile_t := (others => (others => '0'));
+  signal rs1_data_a : xval_t;                                  -- asynchronous
+  signal rs2_data_a : xval_t;                                  -- asynchronous
+  signal rs1_data_s : xval_t;                                  -- synchronous
+  signal rs2_data_s : xval_t;                                  -- synchronous
 
 begin
 
@@ -177,27 +183,41 @@ begin
   P_READ1: process(all)
   begin
     if unsigned(rs1_sel) = 0 then
-      rs1_data <= (rs1_data'range => '0');
+      rs1_data_a <= (rs1_data'range => '0');
     elsif ld_we = '1' and ld_sel = rs1_sel then
-      rs1_data <= ld_sdata;
+      rs1_data_a <= ld_sdata;
     elsif ab(to_integer(unsigned(rs1_sel))) = '1' then
-      rs1_data <= regfile1b(to_integer(unsigned(rs1_sel)));
+      rs1_data_a <= regfile1b(to_integer(unsigned(rs1_sel)));
     else
-      rs1_data <= regfile1a(to_integer(unsigned(rs1_sel)));
+      rs1_data_a <= regfile1a(to_integer(unsigned(rs1_sel)));
     end if;
   end process P_READ1;
 
   P_READ2: process(all)
   begin
     if unsigned(rs2_sel) = 0 then
-      rs2_data <= (rs2_data'range => '0');
+      rs2_data_a <= (rs2_data'range => '0');
     elsif ld_we = '1' and ld_sel = rs2_sel then
-      rs2_data <= ld_sdata;
+      rs2_data_a <= ld_sdata;
     elsif ab(to_integer(unsigned(rs2_sel))) = '1' then
-      rs2_data <= regfile2b(to_integer(unsigned(rs2_sel)));
+      rs2_data_a <= regfile2b(to_integer(unsigned(rs2_sel)));
     else
-      rs2_data <= regfile2a(to_integer(unsigned(rs2_sel)));
+      rs2_data_a <= regfile2a(to_integer(unsigned(rs2_sel)));
     end if;
   end process P_READ2;
+
+  P_READ_SYNC: process(rst,clk)
+  begin
+    if rst = '1' then
+      rs1_data_s <= (others => '0');
+      rs2_data_s <= (others => '0');
+    elsif rising_edge(clk) and clken = '1' then
+      rs1_data_s <= rs1_data_a;
+      rs2_data_s <= rs2_data_a;
+    end if;
+  end process P_READ_SYNC;
+
+  rs1_data <= rs1_data_s when rs_sync else rs1_data_a;
+  rs2_data <= rs2_data_s when rs_sync else rs2_data_a;
 
 end architecture rtl;
