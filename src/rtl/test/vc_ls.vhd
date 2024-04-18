@@ -92,11 +92,11 @@ begin
       report "unaligned memory access not yet supported" severity failure;
     if rst = '1' then
       rvalid <= '0';
-      rdata  <= (others => 'X');
+      rdata  <= (rdata'range => 'X');
     elsif rising_edge(clk) and clken = '1' then
       if rvalid and rready then
         rvalid <= '0';
-        rdata  <= (others => 'X');
+        rdata  <= (rdata'range => 'X');
       end if;
       if avalid and aready then
         v_addr := to_integer(unsigned(aaddr(size_log2-1 downto 2)));
