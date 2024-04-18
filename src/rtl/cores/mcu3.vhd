@@ -76,7 +76,7 @@ use work.isa_pkg.all;
 use work.mcu3_pkg.all;
 
 use work.decoder_pkg.all;
-use work.regfile_ad_pkg.all;
+use work.regfile_d_pkg.all;
 use work.alu_pkg.all;
 use work.csr_m_pkg.all;
 
@@ -420,7 +420,7 @@ begin
   rd_data  <= csr_rdata when d.opcode = SYSTEM else alu_rd;
   ld_rdy   <= ls_rvalid and ls_rready;
 
-  U_REGFILE: component regfile_ad
+  U_REGFILE: component regfile_d
     generic map (
       isa       => isa
     )

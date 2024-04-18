@@ -1,5 +1,5 @@
 --------------------------------------------------------------------------------
--- regfile_ad.vhd                                                             --
+-- regfile_d.vhd                                                              --
 -- JARV register file with delayed/concurrent write support.                  --
 --------------------------------------------------------------------------------
 -- (C) Copyright 2024 Adam Barnes <ambarnes@gmail.com>                        --
@@ -30,9 +30,9 @@ use work.isa_pkg.all;
 library ieee;
   use ieee.std_logic_1164.all;
 
-package regfile_ad_pkg is
+package regfile_d_pkg is
 
-  component regfile_ad is
+  component regfile_d is
     generic (
       isa      : isa_t;
       rs_sync  : boolean := false
@@ -53,9 +53,9 @@ package regfile_ad_pkg is
       rs2_sel  : in    xsel_t;
       rs2_data : out   std_ulogic_vector
     );
-  end component regfile_ad;
+  end component regfile_d;
 
-end package regfile_ad_pkg;
+end package regfile_d_pkg;
 
 --------------------------------------------------------------------------------
 
@@ -66,7 +66,7 @@ library ieee;
   use ieee.std_logic_1164.all;
   use ieee.numeric_std.all;
 
-entity regfile_ad is
+entity regfile_d is
   generic (
     isa      : isa_t;
     rs_sync  : boolean := false
@@ -87,9 +87,9 @@ entity regfile_ad is
     rs2_sel  : in    xsel_t;            -- source register 2 select
     rs2_data : out   std_ulogic_vector  -- source register 2 data
   );
-end entity regfile_ad;
+end entity regfile_d;
 
-architecture rtl of regfile_ad is
+architecture rtl of regfile_d is
 
   subtype xval_t is std_ulogic_vector(isa.XLEN-1 downto 0);
 

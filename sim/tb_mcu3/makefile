@@ -15,7 +15,7 @@ SIM_SRC.work:=\
 	$(SRC)/packages/common.vhd \
 	$(SRC)/packages/isa.vhd \
 	$(SRC)/modules/decoder.vhd \
-	$(SRC)/modules/regfile_ad.vhd \
+	$(SRC)/modules/regfile_d.vhd \
 	$(SRC)/modules/alu.vhd \
 	$(SRC)/modules/csr_m.vhd \
 	$(SRC)/cores/$(DUT).vhd \
